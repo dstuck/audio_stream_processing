@@ -1,25 +1,32 @@
-import wave
+import logging
 import struct
+import wave
 
 import boto3
 import numpy as np
 
+logger = logging.getLogger()
+
 MAX_FREQUENCY = 800
+
 
 def s3_url_to_spectrogram(s3_bucket, s3_key):
     f_wav = wave.open(get_file_like_from_s3(
         s3_bucket=s3_bucket,
         s3_key=s3_key
     ))
+    logger.info("Opened wav file at {}/{}".format(s3_bucket, s3_key))
     spectrum = []
     freqs = get_frequencies_from_wav(f_wav)
     max_index = get_power_spectrum_truncation_index(freqs, MAX_FREQUENCY)
+    logger.info("Processing wav file")
     while True:
         frames = get_frames_from_wav_file(f_wav)
         if frames is None:
             break
         ps = compute_power_spectrum_from_frames(frames)
         spectrum.append(ps[:max_index])
+    logger.info("Finished processing wav file in to spectrogram")
     return spectrum
 
 def get_file_like_from_s3(s3_bucket, s3_key):
